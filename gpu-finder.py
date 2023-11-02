@@ -264,7 +264,6 @@ def create_single_instance(instance_name, compute, project, compute_config, zone
                 }
                 return instance_details
 
-
 def delete_instances(compute, project, instances):
     print(f"Deleting {len(instances)} instances.")
     for i in range(len(instances)):
@@ -291,7 +290,7 @@ def delete_instances(compute, project, instances):
                     raise Exception(result['error'])
                 break
 
-def main(gpu_config, wait=True):
+def main(gpu_config, wait=False):
     compute = googleapiclient.discovery.build('compute', 'v1')
     if gpu_config["instance_config"]["zone"]:
         print(f"Processing selected zones from {gpu_config['instance_config']['zone']}")
@@ -318,7 +317,11 @@ def main(gpu_config, wait=True):
             instance_details = create_instances(compute, gpu_config["project_id"], gpu_config, zones)
             if instance_details:
                 print(f"Created {len(instance_details)} instances in {region}")
-                time.sleep(1)
+                if wait:
+                    print("hit enter to delete instances")
+                    input()
+                else: 
+                    time.sleep(1)
                 delete_instances(compute, gpu_config["project_id"], instance_details)
                 time.sleep(1)
 
