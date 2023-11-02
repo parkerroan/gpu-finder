@@ -1,4 +1,4 @@
-#!/Users/jaredburns/PycharmProjects/find-gcp-gpus/venv/bin/python
+#!/Users/parker/blog/gpu-finder/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
