@@ -140,7 +140,7 @@ def create_single_instance(instance_name, compute, project, compute_config, zone
     # image_url = "http://storage.googleapis.com/gce-demo-input/photo.jpg"
     # image_caption = "Ready for dessert?"
 
-    config = {
+    instance_config = {
         'name': instance_name,
         'machineType': machine_type,
 
@@ -228,11 +228,17 @@ def create_single_instance(instance_name, compute, project, compute_config, zone
         }
     }
 
+    if compute_config['instance_config']['spot_instance'] == True:
+        instance_config['scheduling'] = {
+            "provisioningModel": "SPOT",
+            "instanceTerminationAction": "DELETE"
+        }
+
     print(f"Creating instance {instance_name}.")
     operation = compute.instances().insert(
         project=project,
         zone=zone_config['zone'],
-        body=config).execute()
+        body=instance_config).execute()
 
     print('Waiting for operation to finish...')
     while True:

@@ -10,9 +10,7 @@
     },
     "machine_type": "n1-standard-2",
     "zone": [
-      "northamerica-northeast1-c",
-      "southamerica-east1-a",
-      "southamerica-east1-c"
+      "northamerica-northeast1-c"
     ],
     "network_interfaces": {
       "network": "global/networks/default"
@@ -30,6 +28,7 @@
     "firewall_rules": [
       "http-server",
       "https-server"
-    ]
+    ],
+    "spot_instance": true 
   }
 }
