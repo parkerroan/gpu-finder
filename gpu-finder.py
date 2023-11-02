@@ -335,15 +335,21 @@ def main(gpu_config, wait=True):
     check_gpu_config(gpu_config)
     # distinct_zones = list({v['zone'] for v in compute_zones})
     available_zones = check_machine_type_and_accelerator(compute, gpu_config["project_id"], gpu_config["instance_config"]["machine_type"], gpu_config["instance_config"]["gpu_type"], compute_zones)
-    accelerators = get_accelerator_quota(compute, gpu_config["project_id"], gpu_config, available_zones, gpu_config["instance_config"]["number_of_gpus"])
-    available_regions = list({v['region'] for v in available_zones})
+    zones_in_quota = get_accelerator_quota(compute, gpu_config["project_id"], gpu_config, available_zones, gpu_config["instance_config"]["number_of_gpus"])
+    
+    available_regions = {}
+    for z in zones_in_quota:
+        if z['region'] not in available_regions:
+            available_regions[z['region']] = [z]
+        else:
+            available_regions[z['region']].append(z)
+
     if available_regions:
         print(f"Machine type {gpu_config['instance_config']['machine_type']} is available in the following regions: {available_regions}")
-        instance_details = create_instance(compute, gpu_config["project_id"], gpu_config, accelerators)
-        if wait:
-            print("hit enter to delete instances")
-            input()
-        delete_instance(compute, gpu_config["project_id"], instance_details)
+        for region, zones in available_regions:
+            instance_details = create_instance(compute, gpu_config["project_id"], gpu_config, accelerators)
+            delete_instance(compute, gpu_config["project_id"], instance_details)
+
     else:
         print(f"No regions available with the instance configuration {gpu_config['instance_config']['machine_type']} machine type and {gpu_config['instance_config']['gpu_type']} GPU type")
 
