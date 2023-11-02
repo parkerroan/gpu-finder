@@ -111,18 +111,22 @@ def get_accelerator_quota(compute, project, config, zone, requested_gpus):
         raise Exception(f"No accelerator types of {config['instance_config']['gpu_type']} are available with {config['instance_config']['machine_type']} in any zone, or wrong number of GPUs requested")
     return accelerator_list
 
-def create_instances(compute, project, compute_config, zone_list):
+def create_and_delete_instances(compute, project, compute_config, zone_list):
     created_instances = []
     for zone in zone_list: 
-        instance_name = compute_config['instance_config']['name'] + '-' + str(len(created_instances)+1) + '-' + zone['zone']
-        instance_detail = create_single_instance(instance_name, compute, project, compute_config, zone)
-        if instance_detail:
-            created_instances.append(instance_detail)
-            print(f"Created instance {instance_name} in {zone['zone']}, {compute_config['number_of_instances']-len(created_instances)} more to create")
-        if len(created_instances) >= compute_config['number_of_instances']:
-            print(f"Reached the desired number of instances")
-            return created_instances
-    print(f"All zones attempted, there are not enough resources to create the desired {compute_config['number_of_instances']} instances, {len(created_instances)} created")
+        for i in range(compute_config['number_of_instances_per_zone']):
+            instance_name = compute_config['instance_config']['name'] + '-' + str(i+1) + '-' + zone['zone']
+            instance_detail = create_single_instance(instance_name, compute, project, compute_config, zone)
+            if instance_detail:
+                created_instances.append(instance_detail)
+                print(f"Created instance {instance_name} in {zone['zone']}, {compute_config['number_of_instances_per_zone']-len(created_instances)} more to create")
+                if compute_config["wait_for_delete"] == True:
+                    print("hit enter to delete instances")
+                    input()
+                else: 
+                    time.sleep(1)
+                delete_instances(compute, project, [instance_detail])
+                time.sleep(1)
     return created_instances
 
 def create_single_instance(instance_name, compute, project, compute_config, zone_config):
@@ -290,7 +294,7 @@ def delete_instances(compute, project, instances):
                     raise Exception(result['error'])
                 break
 
-def main(gpu_config, wait=False):
+def main(gpu_config):
     compute = googleapiclient.discovery.build('compute', 'v1')
     if gpu_config["instance_config"]["zone"]:
         print(f"Processing selected zones from {gpu_config['instance_config']['zone']}")
@@ -314,24 +318,15 @@ def main(gpu_config, wait=False):
     if regional_zone_lists:
         for region, zones in regional_zone_lists.items():
             print(f"Machine type {gpu_config['instance_config']['machine_type']} is available in the following region: {region}")
-            instance_details = create_instances(compute, gpu_config["project_id"], gpu_config, zones)
-            if instance_details:
-                print(f"Created {len(instance_details)} instances in {region}")
-                if wait:
-                    print("hit enter to delete instances")
-                    input()
-                else: 
-                    time.sleep(1)
-                delete_instances(compute, gpu_config["project_id"], instance_details)
-                time.sleep(1)
-
-            regional_summary.append(
-                {
-                    "region": region,
-                    "zones_attempted": zones,
-                    "instances_created": instance_details,
-                }
-            )
+            created_instances = create_and_delete_instances(compute, gpu_config["project_id"], gpu_config, zones)
+            if created_instances:
+                print(f"Created {len(created_instances)} instances in {region}")
+                regional_summary.append(
+                    {
+                        "region": region,
+                        "instances_created": created_instances,
+                    }
+                )
     else:
         print(f"No regions available with the instance configuration {gpu_config['instance_config']['machine_type']} machine type and {gpu_config['instance_config']['gpu_type']} GPU type")
     

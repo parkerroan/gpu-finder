@@ -1,7 +1,8 @@
 {
   "project_id": "aerobic-datum-403702",
   "bucket_name": "find-gcp-gpus",
-  "number_of_instances": 1,
+  "number_of_instances_per_zone": 1,
+  "wait_for_delete": false,
   "instance_config": {
     "name": "demo-instance",
     "root_persistent_disk": {
@@ -10,7 +11,12 @@
     },
     "machine_type": "n1-standard-2",
     "zone": [
-      "northamerica-northeast1-c"
+      "us-west1-a",
+      "us-west1-b",
+      "us-west2-b",
+      "us-west2-c",
+      "us-west4-a",
+      "us-west4-b"
     ],
     "network_interfaces": {
       "network": "global/networks/default"
@@ -29,6 +35,6 @@
       "http-server",
       "https-server"
     ],
-    "spot_instance": true 
+    "spot_instance": true
   }
 }
